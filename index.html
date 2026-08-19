@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Macro Meal Calculator</title>
+<style>
+  :root{
+    --red:#e10d0d; --black:#111; --blue:#1474c9; --green:#25a52b;
+    --gray:#f5f5f5; --line:#d8d8d8; --muted:#666;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#f1f1f1;font-family:Arial,Helvetica,sans-serif;color:var(--black)}
+  .app{max-width:1450px;margin:auto;padding:22px}
+  header{background:white;border-radius:18px;padding:18px 24px;border:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;gap:20px;box-shadow:0 5px 20px #0000000c}
+  .brand{font-size:42px;font-weight:900;letter-spacing:-2px}
+  .brand span{color:var(--red)}
+  .sub{font-weight:700;letter-spacing:5px;color:#444;font-size:13px;margin-top:3px}
+  button{border:0;border-radius:10px;padding:11px 16px;font-weight:800;cursor:pointer}
+  .primary{background:var(--red);color:white}.dark{background:#111;color:white}.light{background:#eee}
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;margin-top:18px}
+  .card{background:white;border:1px solid #ddd;border-radius:16px;padding:18px;box-shadow:0 5px 20px #00000008}
+  .toolbar{display:grid;grid-template-columns:1.5fr .8fr .8fr auto;gap:10px;margin-bottom:16px}
+  input,select{width:100%;padding:12px;border:1px solid #ccc;border-radius:9px;font-size:15px;background:white}
+  .meal{border:1px solid #ddd;border-radius:14px;margin:12px 0;overflow:hidden}
+  .meal-head{background:#fafafa;padding:13px 15px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ddd}
+  .meal-name{font-size:19px;font-weight:900}
+  .meal-total{font-size:13px;font-weight:800;color:#555}
+  .food-row{display:grid;grid-template-columns:1.6fr .65fr repeat(4,.7fr) 38px;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid #eee}
+  .food-row:last-child{border-bottom:0}
+  .food-name{font-weight:800}.food-name small{display:block;color:#777;font-weight:500;font-size:11px}
+  .num{text-align:center;font-weight:800;font-size:13px}
+  .kcal{color:var(--red)}.protein{color:var(--blue)}.carbs{color:#d59b00}.fat{color:var(--green)}
+  .remove{background:#eee;color:#b00;padding:7px 9px;border-radius:8px}
+  .addmeal{margin-top:10px}
+  .totals{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+  .metric{border:1px solid #ddd;border-radius:12px;padding:14px}
+  .metric b{display:block;font-size:25px}.metric span{font-size:12px;font-weight:800;color:#666}
+  .metric.k b{color:var(--red)}.metric.p b{color:var(--blue)}.metric.c b{color:#d59b00}.metric.f b{color:var(--green)}
+  .side h2{margin:0 0 12px;font-size:26px}
+  .ring{width:220px;height:220px;border-radius:50%;margin:8px auto 18px;display:grid;place-items:center;background:conic-gradient(var(--red) 0 35%, var(--green) 35% 65%, var(--blue) 65% 100%)}
+  .ring:after{content:"";width:145px;height:145px;border-radius:50%;background:white;position:absolute}
+  .ringtext{position:relative;z-index:1;text-align:center;font-weight:900;font-size:28px}
+  .ringtext small{display:block;font-size:12px;color:#555}
+  .target{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .target label{font-size:11px;font-weight:900;color:#555}.target input{margin-top:4px}
+  .progress{height:9px;background:#eee;border-radius:20px;overflow:hidden;margin:7px 0 15px}
+  .bar{height:100%;width:0;background:var(--red);transition:.2s}
+  .macrobox{border:1px solid #ddd;border-radius:11px;padding:12px;margin-top:9px}
+  .macrobox strong{font-size:19px}.macrobox span{float:right;font-weight:900}
+  .macrobox small{display:block;color:#666;margin-top:4px}
+  .help{background:#fff9e8;border:1px solid #eedb9a;border-radius:11px;padding:11px;margin-top:14px;font-size:12px;line-height:1.45}
+  .custom{display:grid;grid-template-columns:1.2fr repeat(4,.75fr) auto;gap:8px;margin-top:10px}
+  .serving-table{width:100%;border-collapse:collapse;margin-top:12px}
+  .serving-table th,.serving-table td{border:1px solid #ddd;padding:10px;text-align:center}
+  .serving-table th{background:#fafafa;font-size:12px}
+  .serving-table td:first-child{text-align:left;font-weight:800}
+  .serving-count{width:85px;padding:8px!important;text-align:center}
+  .online-status{font-size:12px;font-weight:800;color:#1474c9;margin-top:8px}
+  .section-title{font-weight:900;font-size:17px;margin-top:18px}
+  @media(max-width:1000px){.layout{grid-template-columns:1fr}.side{order:-1}.toolbar{grid-template-columns:1fr 1fr}.food-row{grid-template-columns:1.5fr .7fr repeat(4,.7fr) 36px}}
+  @media(max-width:700px){.app{padding:10px}.brand{font-size:30px}.food-row{grid-template-columns:1.4fr .7fr repeat(2,.8fr) 36px}.food-row .carbs,.food-row .fat{display:none}.totals{grid-template-columns:1fr 1fr}.toolbar{grid-template-columns:1fr}.custom{grid-template-columns:1fr 1fr}}
+
+  .auth-screen{position:fixed;inset:0;background:#f1f1f1;display:grid;place-items:center;z-index:9999}
+  .auth-card{width:min(420px,92vw);background:white;border:1px solid #ddd;border-radius:18px;padding:28px;box-shadow:0 10px 35px #00000018}
+  .auth-card h1{margin:0 0 5px;font-size:30px}.auth-card p{color:#666;font-size:13px}
+  .auth-card label{display:block;font-size:12px;font-weight:900;margin:14px 0 5px}
+  .auth-card button{width:100%;margin-top:15px}
+  .auth-error{color:#b00000;font-size:12px;font-weight:800;margin-top:10px;min-height:16px}
+  .account-box{margin-top:15px;border-top:1px solid #ddd;padding-top:15px}
+  .account-name{font-weight:900}
+  .hidden{display:none!important}
+  .top-actions{display:flex;gap:8px;align-items:center}
+  @media(max-width:700px){.top-actions{flex-direction:column;align-items:stretch}}
+
+  .account-row{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid #ddd;border-radius:10px;padding:10px;margin-top:8px}
+  .account-row small{display:block;color:#777;font-size:11px;margin-top:3px}
+  .account-row button{margin-left:5px;padding:7px 9px;font-size:11px}
+</style>
+</head>
+<body>
+<div id="authScreen" class="auth-screen">
+  <div class="auth-card">
+    <h1>PRE<span style="color:var(--red)">MEAL</span></h1>
+    <p>Sign in to access your meal and macro calculator.</p>
+    <label>USERNAME</label>
+    <input id="loginUser" autocomplete="username" placeholder="Username">
+    <label>PASSWORD</label>
+    <input id="loginPass" type="password" autocomplete="current-password" placeholder="Password">
+    <button class="primary" onclick="login()">LOGIN</button>
+    <div id="loginError" class="auth-error"></div>
+    <button class="light" onclick="showReset()">RESET / CHANGE PASSWORD</button>
+    <div id="resetPanel" class="account-box hidden">
+      <label>USERNAME</label>
+      <input id="resetUser" placeholder="Username">
+      <label>OLD PASSWORD</label>
+      <input id="resetOld" type="password" placeholder="Current password">
+      <label>NEW PASSWORD</label>
+      <input id="resetNew" type="password" placeholder="New password">
+      <button class="dark" onclick="changePassword()">CHANGE PASSWORD</button>
+      <div id="resetMsg" class="auth-error"></div>
+    </div>
+  </div>
+</div>
+<div class="app">
+<header>
+  <div><div class="brand">PRE<span>MEAL</span> CALCULATOR</div><div class="sub">DAILY FOOD • CALORIES • MACROS</div></div>
+  <div class="top-actions">
+    <span id="loggedUser" class="account-name"></span>
+    <button class="dark" onclick="resetDay()">RESET DAY</button>
+    <button class="light" onclick="logout()">LOGOUT</button>
+  </div>
+</header>
+
+<div class="layout">
+<main>
+  <div class="card">
+    <div class="toolbar">
+      <select id="foodSelect"></select>
+      <input id="grams" type="number" min="1" value="100" placeholder="grams">
+      <select id="mealSelect">
+        <option>Breakfast</option><option>9:00 AM • POST-WORKOUT</option><option>Lunch</option>
+        <option>PRE-WORKOUT</option><option>Dinner</option>
+      </select>
+      <button class="primary" onclick="addFood()">+ ADD FOOD</button>
+    </div>
+
+    <div id="meals"></div>
+    <button class="light addmeal" onclick="addCustomFood()">+ ADD CUSTOM FOOD</button>
+
+    <div class="totals">
+      <div class="metric k"><span>CALORIES</span><b id="totalKcal">0</b> kcal</div>
+      <div class="metric p"><span>PROTEIN</span><b id="totalProtein">0</b> g</div>
+      <div class="metric c"><span>CARBS</span><b id="totalCarbs">0</b> g</div>
+      <div class="metric f"><span>FAT</span><b id="totalFat">0</b> g</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">CUSTOM FOOD DATABASE</div><div class="online-status">Custom foods are saved separately for the logged-in account and remain after closing the app.</div>
+    <div class="custom">
+      <input id="cfName" placeholder="Food name">
+      <input id="cfKcal" type="number" placeholder="kcal/100g">
+      <input id="cfP" type="number" step=".1" placeholder="protein">
+      <input id="cfC" type="number" step=".1" placeholder="carbs">
+      <input id="cfF" type="number" step=".1" placeholder="fat">
+      <button class="primary" onclick="saveCustom()">SAVE</button>
+    </div>
+    <div class="help">Enter nutrition values <b>per 100g</b>. The calculator automatically scales them when you enter 10g, 80g, 150g, etc. Values can vary by brand and whether food is raw or cooked, so use the nutrition label or your preferred food database for accuracy.</div>
+  </div>
+
+  <div id="adminPanel" class="card hidden">
+    <div class="section-title">SUPERADMIN • ACCOUNT MANAGEMENT</div>
+    <div class="help">Wil is the superadmin. The superadmin can create accounts, remove accounts, and reset user passwords. Each user has separate saved meals and custom nutrition data.</div>
+    <div class="custom" style="grid-template-columns:1fr 1fr 1fr auto">
+      <input id="newUsername" placeholder="New username">
+      <input id="newPassword" type="password" placeholder="Temporary password">
+      <select id="newRole"><option value="user">USER</option><option value="superadmin">SUPERADMIN</option></select>
+      <button class="primary" onclick="adminAddAccount()">+ ADD ACCOUNT</button>
+    </div>
+    <div id="adminMsg" class="auth-error"></div>
+    <div id="accountRows"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">QUICK SERVING / COUNT TABLE</div>
+    <div class="help">Example: choose <b>Whole Egg</b>, then enter <b>3 or 4 eggs</b>. The app estimates the serving weight and automatically calculates calories and macros. For packaged foods, you can search online nutrition data below.</div>
+    <div class="custom" style="grid-template-columns:1.5fr .8fr auto">
+      <select id="servingFood"></select>
+      <input id="servingCount" type="number" min="1" value="3" placeholder="quantity">
+      <button class="primary" onclick="addServing()">+ ADD SERVING</button>
+    </div>
+    <div class="custom" style="grid-template-columns:1fr auto">
+      <input id="onlineFoodSearch" placeholder="Search online food database (e.g. egg, milk, yogurt)">
+      <button class="dark" onclick="lookupOnlineFood()">SEARCH ONLINE</button>
+    </div>
+    <div id="onlineResults"></div>
+    <div id="onlineStatus" class="online-status"></div>
+    <table class="serving-table">
+      <thead><tr><th>FOOD</th><th>QTY</th><th>EST. WEIGHT</th><th>KCAL</th><th>PROTEIN</th><th>CARBS</th><th>FAT</th></tr></thead>
+      <tbody id="servingRows"></tbody>
+    </table>
+  </div>
+</main>
+
+<aside class="card side">
+  <h2>DAILY MACROS</h2>
+  <div class="ring"><div class="ringtext" id="ringText">0<br><small>kcal</small></div></div>
+
+  <div class="target">
+    <div><label>CALORIE TARGET</label><input id="targetKcal" type="number" value="1900" oninput="update()"></div>
+    <div><label>PROTEIN TARGET (g)</label><input id="targetP" type="number" value="150" oninput="update()"></div>
+    <div><label>CARBS TARGET (g)</label><input id="targetC" type="number" value="165" oninput="update()"></div>
+    <div><label>FAT TARGET (g)</label><input id="targetF" type="number" value="73" oninput="update()"></div>
+  </div>
+
+  <div class="macrobox"><strong>Calories</strong><span id="calPct">0%</span><div class="progress"><div class="bar" id="calBar"></div></div><small id="calRemain">0 / 1900 kcal</small></div>
+  <div class="macrobox"><strong style="color:var(--blue)">Protein</strong><span id="pPct">0%</span><div class="progress"><div class="bar" id="pBar"></div></div><small id="pRemain">0 / 150 g</small></div>
+  <div class="macrobox"><strong style="color:#d59b00">Carbs</strong><span id="cPct">0%</span><div class="progress"><div class="bar" id="cBar"></div></div><small id="cRemain">0 / 165 g</small></div>
+  <div class="macrobox"><strong style="color:var(--green)">Fat</strong><span id="fPct">0%</span><div class="progress"><div class="bar" id="fBar"></div></div><small id="fRemain">0 / 73 g</small></div>
+
+  <div class="account-box">
+    <button class="light" onclick="showChangePassword()">CHANGE PASSWORD</button>
+  </div>
+
+  <div class="help"><b>Example:</b> Add <b>100g rice</b> + <b>10g shrimp</b>. Each food is calculated separately from its per-100g nutrition values, then automatically added to your daily calories, protein, carbs and fat.</div>
+</aside>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/*
+  PREMEAL ONLINE VERSION
+  1) Put your Supabase URL and PUBLISHABLE/ANON key below.
+  2) Run supabase.sql in your Supabase SQL Editor.
+  3) Deploy the included Edge Function "admin-user".
+*/
+const SUPABASE_URL = "https://bfcryiiyifkccbzsedhb.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_m_AN_Wj1tFSztEPDV5B5jg_kMBYGLvz";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+let currentProfile = null;
+let foods = {};
+let day = [];
+
+const defaultFoods = {
+ "White Rice (cooked)": {k:130,p:2.7,c:28.2,f:0.3},
+ "Chicken Breast (cooked)": {k:165,p:31,c:0,f:3.6},
+ "Shrimp (cooked)": {k:99,p:24,c:0.2,f:0.3},
+ "Whole Egg": {k:143,p:12.6,c:0.7,f:9.5},
+ "Egg White": {k:52,p:10.9,c:0.7,f:0.2},
+ "Quaker Chocolate Oatmeal": {k:380,p:10,c:68,f:7},
+ "Whole Wheat Bread": {k:247,p:13,c:41,f:4.2},
+ "Banana": {k:89,p:1.1,c:22.8,f:0.3},
+ "Mixed Vegetables": {k:65,p:3,c:12,f:0.5},
+ "Protein Powder": {k:400,p:80,c:8,f:6}
+};
+
+let foods = {...defaultFoods};
+let day = [];
+
+function populate(){
+  const names=Object.keys(foods).sort();
+  const s=document.getElementById("foodSelect");
+  s.innerHTML=names.map(x=>`<option>${x}</option>`).join("");
+  const ss=document.getElementById("servingFood");
+  ss.innerHTML=names.map(x=>`<option>${x}</option>`).join("");
+}
+function addFood(){
+  const name=document.getElementById("foodSelect").value;
+  const grams=Number(document.getElementById("grams").value)||0;
+  const meal=document.getElementById("mealSelect").value;
+  if(!grams)return;
+  day.push({id:Date.now()+Math.random(),name,grams,meal});
+  save(); render();
+}
+function addCustomFood(){
+  document.getElementById("cfName").focus();
+}
+function calc(item){
+  const n=foods[item.name], q=item.grams/100;
+  return {k:n.k*q,p:n.p*q,c:n.c*q,f:n.f*q};
+}
+function fmt(n){return Number(n).toFixed(n>=100?0:1).replace(".0","")}
+function render(){
+  const meals=["Breakfast","9:00 AM • POST-WORKOUT","Lunch","PRE-WORKOUT","Dinner"];
+  document.getElementById("meals").innerHTML=meals.map(meal=>{
+    const rows=day.filter(x=>x.meal===meal);
+    if(!rows.length)return "";
+    let mt={k:0,p:0,c:0,f:0};
+    const body=rows.map(x=>{
+      const v=calc(x);mt.k+=v.k;mt.p+=v.p;mt.c+=v.c;mt.f+=v.f;
+      return `<div class="food-row">
+        <div class="food-name">${x.name}<small>nutrition scaled from ${x.grams}g</small></div>
+        <div><input type="number" min="1" value="${x.grams}" onchange="changeGrams(${x.id},this.value)"></div>
+        <div class="num kcal">${fmt(v.k)}</div><div class="num protein">${fmt(v.p)}</div>
+        <div class="num carbs">${fmt(v.c)}</div><div class="num fat">${fmt(v.f)}</div>
+        <button class="remove" onclick="removeFood(${x.id})">×</button>
+      </div>`;
+    }).join("");
+    return `<section class="meal"><div class="meal-head"><div class="meal-name">${meal}</div><div class="meal-total">${fmt(mt.k)} kcal • ${fmt(mt.p)}g protein • ${fmt(mt.c)}g carbs • ${fmt(mt.f)}g fat</div></div>
+      <div class="food-row" style="background:#f8f8f8;font-size:11px;font-weight:900"><div>FOOD</div><div>GRAMS</div><div class="kcal">KCAL</div><div class="protein">PROTEIN</div><div class="carbs">CARBS</div><div class="fat">FAT</div><div></div></div>${body}</section>`;
+  }).join("") || `<div style="padding:40px;text-align:center;color:#777;font-weight:700">Add your first food above to start calculating.</div>`;
+  update();
+}
+function update(){
+  let t={k:0,p:0,c:0,f:0}; day.forEach(x=>{const v=calc(x);t.k+=v.k;t.p+=v.p;t.c+=v.c;t.f+=v.f});
+  document.getElementById("totalKcal").textContent=fmt(t.k);
+  document.getElementById("totalProtein").textContent=fmt(t.p);
+  document.getElementById("totalCarbs").textContent=fmt(t.c);
+  document.getElementById("totalFat").textContent=fmt(t.f);
+  const targets={k:Number(targetKcal.value)||1,p:Number(targetP.value)||1,c:Number(targetC.value)||1,f:Number(targetF.value)||1};
+  document.getElementById("ringText").innerHTML=fmt(t.k)+"<br><small>kcal</small>";
+  setProgress("cal",t.k,targets.k,"kcal");setProgress("p",t.p,targets.p,"g");setProgress("c",t.c,targets.c,"g");setProgress("f",t.f,targets.f,"g");
+}
+function setProgress(key,val,target,unit){
+  const pct=Math.round(val/target*100);
+  document.getElementById(key+"Pct").textContent=pct+"%";
+  document.getElementById(key+"Bar").style.width=Math.min(pct,100)+"%";
+  document.getElementById(key+"Remain").textContent=fmt(val)+" / "+fmt(target)+" "+unit;
+}
+
+
+
+/* =========================
+   ONLINE AUTH + CLOUD DATA
+   ========================= */
+
+function currentUser(){
+  return currentProfile?.username || "";
+}
+
+function escapeHtml(value){
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[ch]));
+}
+
+async function loadUserData(){
+  if(!currentProfile) return;
+
+  const {data: mealRows, error: mealError} = await supabaseClient
+    .from("macro_days")
+    .select("items")
+    .eq("user_id", currentProfile.id)
+    .maybeSingle();
+
+  if(mealError){
+    console.error(mealError);
+    day = [];
+  }else{
+    day = mealRows?.items || [];
+  }
+
+  const {data: foodRows, error: foodError} = await supabaseClient
+    .from("custom_foods")
+    .select("name,k,p,c,f")
+    .eq("user_id", currentProfile.id);
+
+  if(foodError){
+    console.error(foodError);
+    foods = {...defaultFoods};
+  }else{
+    foods = {...defaultFoods};
+    (foodRows || []).forEach(x => {
+      foods[x.name] = {
+        k:Number(x.k)||0,
+        p:Number(x.p)||0,
+        c:Number(x.c)||0,
+        f:Number(x.f)||0
+      };
+    });
+  }
+
+  populate();
+  render();
+  renderServingTable();
+}
+
+async function save(){
+  if(!currentProfile) return;
+
+  const {error} = await supabaseClient
+    .from("macro_days")
+    .upsert({
+      user_id: currentProfile.id,
+      items: day,
+      updated_at: new Date().toISOString()
+    }, {onConflict:"user_id"});
+
+  if(error) console.error("Meal save failed:", error);
+}
+
+async function saveCustom(){
+  const name=document.getElementById("cfName").value.trim();
+  if(!name)return alert("Enter a food name.");
+
+  const item = {
+    user_id: currentProfile.id,
+    name,
+    k:Number(document.getElementById("cfKcal").value)||0,
+    p:Number(document.getElementById("cfP").value)||0,
+    c:Number(document.getElementById("cfC").value)||0,
+    f:Number(document.getElementById("cfF").value)||0
+  };
+
+  const {error} = await supabaseClient
+    .from("custom_foods")
+    .upsert(item, {onConflict:"user_id,name"});
+
+  if(error){
+    alert("Could not save custom food: " + error.message);
+    return;
+  }
+
+  foods[name]={k:item.k,p:item.p,c:item.c,f:item.f};
+  ["cfName","cfKcal","cfP","cfC","cfF"].forEach(id=>document.getElementById(id).value="");
+  populate();
+}
+
+async function login(){
+  const username=document.getElementById("loginUser").value.trim();
+  const password=document.getElementById("loginPass").value;
+  const msg=document.getElementById("loginError");
+
+  if(!username || !password){
+    msg.textContent="Enter username and password.";
+    return;
+  }
+
+  msg.textContent="Signing in…";
+
+  const {data: profile, error: profileError} = await supabaseClient
+    .from("profiles")
+    .select("id,username,email,role,active")
+    .eq("username", username)
+    .maybeSingle();
+
+  if(profileError || !profile || profile.active === false){
+    msg.textContent="Invalid username or password.";
+    return;
+  }
+
+  const {error} = await supabaseClient.auth.signInWithPassword({
+    email: profile.email,
+    password
+  });
+
+  if(error){
+    msg.textContent="Invalid username or password.";
+    return;
+  }
+
+  currentProfile = profile;
+  await loadUserData();
+
+  document.getElementById("authScreen").classList.add("hidden");
+  document.getElementById("loggedUser").textContent =
+    "👤 " + profile.username + (profile.role==="superadmin" ? " • SUPERADMIN" : "");
+  updateAdminPanel();
+  msg.textContent="";
+}
+
+async function logout(){
+  await save();
+  await supabaseClient.auth.signOut();
+  currentProfile=null;
+  day=[];
+  foods={...defaultFoods};
+  document.getElementById("authScreen").classList.remove("hidden");
+  document.getElementById("loginPass").value="";
+}
+
+function showReset(){
+  document.getElementById("resetPanel").classList.toggle("hidden");
+  document.getElementById("resetMsg").textContent="";
+}
+
+function showChangePassword(){
+  document.getElementById("resetPanel").classList.remove("hidden");
+  document.getElementById("resetUser").value=currentUser();
+  document.getElementById("resetOld").value="";
+  document.getElementById("resetNew").value="";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+async function changePassword(){
+  const username=document.getElementById("resetUser").value.trim();
+  const oldP=document.getElementById("resetOld").value;
+  const newP=document.getElementById("resetNew").value;
+  const msg=document.getElementById("resetMsg");
+
+  if(username !== currentUser()){
+    msg.style.color="#b00000";
+    msg.textContent="You can only change your own password here.";
+    return;
+  }
+
+  if(newP.length<6){
+    msg.style.color="#b00000";
+    msg.textContent="New password must be at least 6 characters.";
+    return;
+  }
+
+  /*
+    Supabase Auth verifies the old password by signing in again.
+    This keeps passwords out of your database tables.
+  */
+  const {data: prof} = await supabaseClient
+    .from("profiles")
+    .select("email")
+    .eq("username", username)
+    .maybeSingle();
+
+  if(!prof){
+    msg.style.color="#b00000";
+    msg.textContent="Account not found.";
+    return;
+  }
+
+  const {error: verifyError} = await supabaseClient.auth.signInWithPassword({
+    email: prof.email,
+    password: oldP
+  });
+
+  if(verifyError){
+    msg.style.color="#b00000";
+    msg.textContent="Username or current password is incorrect.";
+    return;
+  }
+
+  const {error} = await supabaseClient.auth.updateUser({password:newP});
+
+  if(error){
+    msg.style.color="#b00000";
+    msg.textContent=error.message;
+    return;
+  }
+
+  msg.style.color="#168000";
+  msg.textContent="Password changed successfully.";
+  document.getElementById("resetOld").value="";
+  document.getElementById("resetNew").value="";
+}
+
+async function initAuth(){
+  const {data:{session}} = await supabaseClient.auth.getSession();
+
+  if(!session){
+    document.getElementById("authScreen").classList.remove("hidden");
+    return;
+  }
+
+  const {data: profile, error} = await supabaseClient
+    .from("profiles")
+    .select("id,username,email,role,active")
+    .eq("id", session.user.id)
+    .maybeSingle();
+
+  if(error || !profile || profile.active === false){
+    await supabaseClient.auth.signOut();
+    document.getElementById("authScreen").classList.remove("hidden");
+    return;
+  }
+
+  currentProfile=profile;
+  await loadUserData();
+
+  document.getElementById("authScreen").classList.add("hidden");
+  document.getElementById("loggedUser").textContent =
+    "👤 " + profile.username + (profile.role==="superadmin" ? " • SUPERADMIN" : "");
+  updateAdminPanel();
+}
+
+async function updateAdminPanel(){
+  const panel=document.getElementById("adminPanel");
+  if(!panel)return;
+
+  const isAdmin = currentProfile && currentProfile.role==="superadmin";
+  panel.classList.toggle("hidden", !isAdmin);
+
+  if(isAdmin) await renderAccounts();
+}
+
+async function renderAccounts(){
+  const box=document.getElementById("accountRows");
+  if(!box || !currentProfile) return;
+
+  const {data: accounts, error} = await supabaseClient
+    .from("profiles")
+    .select("id,username,role,active,created_at")
+    .order("username");
+
+  if(error){
+    box.innerHTML=`<div class="help">Could not load accounts: ${escapeHtml(error.message)}</div>`;
+    return;
+  }
+
+  box.innerHTML=(accounts||[]).map(a=>{
+    const buttons = a.id===currentProfile.id
+      ? `<span style="font-size:12px;font-weight:800;color:#666">CURRENT ADMIN</span>`
+      : `<button class="light" onclick="adminResetPassword('${escapeHtml(a.username)}')">RESET PASSWORD</button>
+         <button class="remove" onclick="deleteAccount('${escapeHtml(a.username)}')">REMOVE</button>`;
+
+    return `<div class="account-row">
+      <div><b>${escapeHtml(a.username)}</b><small>${escapeHtml(a.role)}${a.active===false?" • DISABLED":""}</small></div>
+      <div>${buttons}</div>
+    </div>`;
+  }).join("");
+}
+
+async function callAdminFunction(body){
+  const {data:{session}} = await supabaseClient.auth.getSession();
+  if(!session) throw new Error("You are not logged in.");
+
+  const {data, error} = await supabaseClient.functions.invoke("admin-user", {
+    body
+  });
+
+  if(error) throw error;
+  if(data?.error) throw new Error(data.error);
+  return data;
+}
+
+async function adminAddAccount(){
+  const u=document.getElementById("newUsername").value.trim();
+  const p=document.getElementById("newPassword").value;
+  const role=document.getElementById("newRole").value;
+  const msg=document.getElementById("adminMsg");
+
+  if(!u || !p){msg.textContent="Enter username and password.";return;}
+  if(!/^[A-Za-z0-9_.-]{3,40}$/.test(u)){
+    msg.textContent="Username must be 3–40 characters: letters, numbers, _, ., or -.";
+    return;
+  }
+  if(p.length<6){msg.textContent="Password must be at least 6 characters.";return;}
+
+  msg.style.color="#444";
+  msg.textContent="Creating account…";
+
+  try{
+    await callAdminFunction({action:"create",username:u,password:p,role});
+    document.getElementById("newUsername").value="";
+    document.getElementById("newPassword").value="";
+    msg.style.color="#168000";
+    msg.textContent="Account created successfully and saved online.";
+    await renderAccounts();
+  }catch(e){
+    msg.style.color="#b00000";
+    msg.textContent="Could not create account: "+(e.message||e);
+  }
+}
+
+async function deleteAccount(u){
+  if(!confirm("Remove account '"+u+"'? This also removes that user's saved meal and custom food data."))return;
+
+  try{
+    await callAdminFunction({action:"delete",username:u});
+    await renderAccounts();
+  }catch(e){
+    alert("Could not remove account: "+(e.message||e));
+  }
+}
+
+async function adminResetPassword(u){
+  const p=prompt("Enter a new password for "+u+":");
+  if(p===null)return;
+  if(p.length<6){alert("Password must be at least 6 characters.");return;}
+
+  try{
+    await callAdminFunction({action:"reset_password",username:u,password:p});
+    alert("Password reset successfully.");
+  }catch(e){
+    alert("Could not reset password: "+(e.message||e));
+  }
+}
+
+/* Save meal changes after each user action. */
+async function removeFood(id){
+  day=day.filter(x=>x.id!==id);
+  await save();
+  render();
+}
+
+async function resetDay(){
+  if(confirm("Clear all foods for today for this account?")){
+    day=[];
+    await save();
+    render();
+  }
+}
+
+async function changeGrams(id,val){
+  const x=day.find(x=>x.id===id);
+  if(x)x.grams=Number(val)||1;
+  await save();
+  render();
+}
+
+/* Online foods are also stored per account. */
+async 
+
+const servingSizes = {
+  "Whole Egg": 50,
+  "Egg White": 33,
+  "Banana": 118,
+  "Whole Wheat Bread": 28,
+  "Chicken Breast (cooked)": 100,
+  "Shrimp (cooked)": 20,
+  "White Rice (cooked)": 158
+};
+
+function addServing(){
+  const name=document.getElementById("servingFood").value;
+  const count=Math.max(1,Number(document.getElementById("servingCount").value)||1);
+  const grams=(servingSizes[name]||100)*count;
+  day.push({id:Date.now()+Math.random(),name,grams,meal:"Breakfast"});
+  save(); render(); renderServingTable();
+}
+
+function renderServingTable(){
+  const rows=document.getElementById("servingRows");
+  const name=document.getElementById("servingFood").value;
+  const count=Math.max(1,Number(document.getElementById("servingCount").value)||1);
+  if(!name){rows.innerHTML="";return;}
+  const grams=(servingSizes[name]||100)*count;
+  const v=calc({name,grams});
+  rows.innerHTML=`<tr>
+    <td>${name}</td><td>${count}</td><td>${fmt(grams)} g</td>
+    <td class="kcal">${fmt(v.k)}</td><td class="protein">${fmt(v.p)} g</td>
+    <td class="carbs">${fmt(v.c)} g</td><td class="fat">${fmt(v.f)} g</td>
+  </tr>`;
+}
+
+async function searchOnlineFood(){
+  const q=document.getElementById("foodSelect").value;
+  const status=document.getElementById("onlineStatus");
+  if(!q)return;
+  status.textContent="Using built-in nutrition data. Online lookup is available for packaged foods.";
+}
+
+async function lookupOnlineFood(){
+  const q=document.getElementById("onlineFoodSearch").value.trim();
+  const box=document.getElementById("onlineResults");
+  const status=document.getElementById("onlineStatus");
+  if(!q){box.innerHTML="";return;}
+  status.textContent="Searching Open Food Facts online…";
+  try{
+    const url="https://world.openfoodfacts.org/cgi/search.pl?search_terms="+encodeURIComponent(q)+"&search_simple=1&action=process&json=1&page_size=8&fields=product_name,brands,nutriments";
+    const r=await fetch(url);
+    const data=await r.json();
+    const products=(data.products||[]).filter(x=>x.product_name && x.nutriments);
+    if(!products.length){box.innerHTML='<div class="help">No online results found. Try another food name.</div>';status.textContent="No online result.";return;}
+    box.innerHTML=products.map((x,i)=>{
+      const n=x.nutriments||{};
+      const k=n["energy-kcal_100g"]||0, p=n.proteins_100g||0, c=n.carbohydrates_100g||0, f=n.fat_100g||0;
+      return `<div class="macrobox"><strong>${x.product_name}</strong> ${x.brands?`<small>${x.brands}</small>`:""}
+        <span>${fmt(k)} kcal</span><small>${fmt(p)}g protein • ${fmt(c)}g carbs • ${fmt(f)}g fat per 100g
+        <button class="light" style="float:right" onclick='useOnlineFood(${JSON.stringify({name:x.product_name,k,p,c,f})})'>USE</button></small></div>`;
+    }).join("");
+    status.textContent="Online data loaded from Open Food Facts.";
+  }catch(e){
+    status.textContent="Online lookup failed. Using your saved/local nutrition data.";
+    box.innerHTML='<div class="help">Could not reach the online database. You can still use the built-in foods or Custom Food Database.</div>';
+  }
+}
+
+
+
+populate(); renderServingTable(); initAuth();
+document.getElementById("servingFood").addEventListener("change",renderServingTable);
+document.getElementById("servingCount").addEventListener("input",renderServingTable);
+</script>
+</body>
+</html>
