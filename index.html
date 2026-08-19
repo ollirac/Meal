@@ -593,12 +593,12 @@ input,select{
 
     <div id="loginError" class="auth-error"></div>
 
-    <button
-      class="light"
-      onclick="showReset()"
-    >
-      RESET / CHANGE PASSWORD
-    </button>
+   <button
+  class="light"
+  onclick="showReset()"
+>
+  CHANGE PASSWORD
+</button>
 
     <div id="resetPanel" class="account-box hidden">
 
@@ -2184,21 +2184,20 @@ async function login(){
       STEP 1:
       Find the user's email from the profiles table.
     */
-
-    const {
-      data:profile,
-      error:profileError
-    } = await supabaseClient
-      .from("profiles")
-      .select(
-        "id,username,email,role,active"
-      )
-      .eq(
-        "username",
-        username
-      )
-      .maybeSingle();
-
+const {
+  data:profile,
+  error
+} =
+  await supabaseClient
+    .from("profiles")
+    .select(
+      "id,username,email,role,active"
+    )
+    .eq(
+      "id",
+      session.user.id
+    )
+    .maybeSingle();
 
     if(profileError){
 
@@ -2460,9 +2459,7 @@ async function changePassword(){
 
   if(!currentProfile){
 
-    alert(
-      "Please log in first."
-    );
+    alert("Please log in first.");
 
     return;
   }
@@ -2658,22 +2655,20 @@ async function initAuth(){
       Load profile.
     */
 
-    const {
-      data:profile,
-      error
-    } =
-      await supabaseClient
-        .from("profiles")
-        .select(
-          "id,username,email,role,active"
-        )
-        .eq(
-          "id",
-          session.user.id
-        )
-        .maybeSingle();
-
-
+const {
+  data:profile,
+  error
+} =
+  await supabaseClient
+    .from("profiles")
+    .select(
+      "id,username,email,role,active"
+    )
+    .eq(
+      "id",
+      session.user.id
+    )
+    .maybeSingle();
     if(
       error ||
       !profile ||
