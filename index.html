@@ -216,9 +216,12 @@
   2) Run supabase.sql in your Supabase SQL Editor.
   3) Deploy the included Edge Function "admin-user".
 */
-const SUPABASE_URL = "https://bfcryiiyifkccbzsedhb.supabase.co/functions/v1/admin-user";
+const SUPABASE_URL = "https://bfcryiiyifkccbzsedhb.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_m_AN_Wj1tFSztEPDV5B5jg_kMBYGLvz";
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+);
 
 let currentProfile = null;
 let foods = {};
