@@ -1978,13 +1978,10 @@ async function saveCustom(){
 async function login(){
 
   const username =
-    document.getElementById("loginUser")
-      .value
-      .trim();
+    document.getElementById("loginUser").value.trim();
 
   const password =
-    document.getElementById("loginPass")
-      .value;
+    document.getElementById("loginPass").value;
 
   const message =
     document.getElementById("loginError");
@@ -1992,14 +1989,186 @@ async function login(){
   const button =
     document.getElementById("loginButton");
 
-
   if(!username || !password){
-
-    message.textContent =
-      "Enter username and password.";
-
+    message.style.color = "#b00000";
+    message.textContent = "Enter username and password.";
     return;
   }
+
+  button.disabled = true;
+  message.style.color = "#444";
+  message.textContent = "Signing in…";
+
+  try{
+
+    /*
+     * IMPORTANT:
+     * Use the SECURITY DEFINER function instead of
+     * directly selecting from profiles.
+     */
+
+    const {
+      data:profiles,
+      error:profileError
+    } = await supabaseClient
+      .rpc(
+        "get_login_profile",
+        {
+          p_username: username
+        }
+      );
+
+    if(profileError){
+
+      console.error(
+        "Username lookup error:",
+        profileError
+      );
+
+      message.style.color = "#b00000";
+      message.textContent =
+        "Unable to access the account database.";
+
+      return;
+    }
+
+    const profile =
+      profiles && profiles.length
+        ? profiles[0]
+        : null;
+
+    if(!profile){
+
+      message.style.color = "#b00000";
+      message.textContent =
+        "Invalid username or password.";
+
+      return;
+    }
+
+    if(profile.active === false){
+
+      message.style.color = "#b00000";
+      message.textContent =
+        "This account has been disabled.";
+
+      return;
+    }
+
+    /*
+     * Now authenticate through Supabase Auth.
+     */
+
+    const {
+      data:authData,
+      error:authError
+    } =
+      await supabaseClient.auth.signInWithPassword({
+
+        email: profile.email,
+
+        password: password
+
+      });
+
+    if(authError){
+
+      console.error(
+        "Supabase authentication error:",
+        authError
+      );
+
+      message.style.color = "#b00000";
+      message.textContent =
+        "Invalid username or password.";
+
+      return;
+    }
+
+    if(!authData?.user){
+
+      message.style.color = "#b00000";
+      message.textContent =
+        "Login failed.";
+
+      return;
+    }
+
+    /*
+     * Make absolutely sure the Auth user and profile
+     * belong to the same account.
+     */
+
+    if(authData.user.id !== profile.id){
+
+      await supabaseClient.auth.signOut();
+
+      message.style.color = "#b00000";
+      message.textContent =
+        "Account configuration error.";
+
+      return;
+    }
+
+    currentProfile = profile;
+
+    /*
+     * Load this user's saved meals and custom foods.
+     */
+
+    await loadUserData();
+
+    /*
+     * Hide login screen.
+     */
+
+    document
+      .getElementById("authScreen")
+      .classList
+      .add("hidden");
+
+    /*
+     * Display username.
+     */
+
+    document
+      .getElementById("loggedUser")
+      .textContent =
+        "👤 " +
+        profile.username +
+        (
+          profile.role === "superadmin"
+            ? " • SUPERADMIN"
+            : ""
+        );
+
+    /*
+     * Show admin panel if applicable.
+     */
+
+    await updateAdminPanel();
+
+    message.textContent = "";
+
+  }catch(error){
+
+    console.error(
+      "Unexpected login error:",
+      error
+    );
+
+    message.style.color = "#b00000";
+
+    message.textContent =
+      error?.message ||
+      "Login failed.";
+
+  }finally{
+
+    button.disabled = false;
+
+  }
+}
 
 
   message.style.color = "#444";
